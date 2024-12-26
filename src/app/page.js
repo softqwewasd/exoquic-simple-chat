@@ -1,95 +1,131 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+"use client"
+
+import { useEffect, useState } from "react";
+import { SubscriptionManager } from "@exoquic/sub";
+
+// This is the subscription manager, it doesn't do much right now,
+// but sooner rather than later it will be caching subscriptions and
+// events, decreasing the egress costs significantly :)
+export const subscriptionManager = new SubscriptionManager(async () => {
+  const response = await fetch("/api/authorize-subscribers");
+  const data = await response.json();
+  return data.subscriptionToken;
+}, { env: "dev" });
 
 export default function Home() {
-  return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol>
-          <li>
-            Get started by editing <code>src/app/page.js</code>.
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const [nickname, setNickname] = useState("");
+  const [chatStarted, setChatStarted] = useState(false);
+  const [messages, setMessages] = useState([]);
+  const [newMessage, setNewMessage] = useState("");
 
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+  const startChatting = () => {
+    if (nickname.trim() !== "") {
+      setChatStarted(true);
+    }
+  };
+
+  const sendMessage = async () => {
+    if (newMessage.trim() === "") return;
+
+    const message = {
+      sender: nickname,
+      message: newMessage,
+    };
+
+    await fetch("/api/send-message", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(message),
+    });
+
+    setNewMessage("");
+  };
+
+  // This useEffect is where we retrieve an subscription token and subscribe to the "simple-chat" topic.
+  useEffect(() => {
+    if (!chatStarted) return;
+
+    let subscriber = null;
+    (async () => {
+      // Authorize the subscriber
+      subscriber = await subscriptionManager.authorizeSubscriber();
+
+      // Subscribe to the "simple-chat" topic
+      subscriber.subscribe(event => {
+        const parsedMessage = JSON.parse(event.data);
+        console.log(parsedMessage);
+        setMessages(prevMessages => [...prevMessages, parsedMessage]);
+      })
+    })()
+
+    return () => {
+      if (subscriber) {
+        // Unsubscribe from the "simple-chat" topic when component unmounts
+        subscriber.unsubscribe();
+        setMessages([]);
+      }
+    }
+    
+  }, [chatStarted]);
+
+  return (
+    <div style={{ padding: "20px" }}>
+      {!chatStarted ? (
+        <div>
+          <h1>Welcome to the Chat App</h1>
+          <input
+            type="text"
+            placeholder="Enter your nickname"
+            value={nickname}
+            onChange={(e) => setNickname(e.target.value)}
+            style={{ padding: "10px", fontSize: "16px", width: "300px" }}
+          />
+          <button
+            onClick={startChatting}
+            style={{ padding: "10px", marginLeft: "10px", fontSize: "16px" }}
           >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.secondary}
-          >
-            Read our docs
-          </a>
+            Start Chatting
+          </button>
         </div>
-      </main>
-      <footer className={styles.footer}>
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
+      ) : (
+        <div>
+          <h1>Chat Room</h1>
+          <div
+            style={{
+              border: "1px solid #ccc",
+              padding: "10px",
+              height: "300px",
+              overflowY: "scroll",
+              marginBottom: "10px",
+            }}
+          >
+            {messages.length > 0 ? (
+              messages.map((msg, index) => (
+                <div key={index}>
+                  <strong>{msg.sender}:</strong> {msg.message}
+                </div>
+              ))
+            ) : (
+              <p>No messages yet.</p>
+            )}
+          </div>
+          <input
+            type="text"
+            placeholder="Type your message"
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+            style={{ padding: "10px", fontSize: "16px", width: "300px" }}
           />
-          Learn
-        </a>
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+          <button
+            onClick={sendMessage}
+            style={{ padding: "10px", marginLeft: "10px", fontSize: "16px" }}
+          >
+            Send
+          </button>
+        </div>
+      )}
     </div>
   );
 }
