@@ -74,7 +74,7 @@ export default function Home() {
     <div style={{ padding: "20px" }}>
       {!chatStarted ? (
         <div>
-          <h1>Welcome to the Chat App</h1>
+          <h1 style={{marginBottom: "20px"}}>Welcome to the Simple Chat App built with <a href="https://exoquic.com" style={{textDecoration: "underline"}}>Exoquic.com</a></h1>
           <input
             type="text"
             placeholder="Enter your nickname"
@@ -126,6 +126,8 @@ export default function Home() {
           </button>
         </div>
       )}
+
+      <a href="https://exoquic.com" style={{ display: "block", marginTop: "20px", textDecoration: "underline" }}>Learn more about Exoquic</a>
     </div>
   );
 }
