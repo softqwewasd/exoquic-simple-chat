@@ -10,7 +10,7 @@ export const subscriptionManager = new SubscriptionManager(async () => {
   const response = await fetch("/api/authorize-subscribers");
   const data = await response.json();
   return data.subscriptionToken;
-}, { env: "dev" });
+});
 
 export default function Home() {
   const [nickname, setNickname] = useState("");
