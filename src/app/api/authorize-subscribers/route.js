@@ -13,7 +13,8 @@ export async function GET(req) {
 	// new events that are published to the topic "simple-chat".
   const subscriptionToken = await exoquicAuth.authorizeSubscription({
     topic: "simple-chat", // I am using the topic "simple-chat", because I am already using "chat" for a different app 
-		channel: "one-channel-to-rule-them-all" // https://exoquic.com/docs/publishing-events#channel
+		channel: "one-channel-to-rule-them-all", // https://exoquic.com/docs/publishing-events#channel
+		resetFrom: "earliest"
   });
 
 	return NextResponse.json({ subscriptionToken });

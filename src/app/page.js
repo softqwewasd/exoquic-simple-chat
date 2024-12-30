@@ -53,10 +53,11 @@ export default function Home() {
       subscriber = await subscriptionManager.authorizeSubscriber();
 
       // Subscribe to the "simple-chat" topic
-      subscriber.subscribe(event => {
-        const parsedMessage = JSON.parse(event.data);
-        console.log(parsedMessage);
-        setMessages(prevMessages => [...prevMessages, parsedMessage]);
+      subscriber.subscribe(rawEventBatch => {
+        const parsedEventBatchWithRawMessages = JSON.parse(rawEventBatch.data);
+        const eventBatch = parsedEventBatchWithRawMessages.map(rawEventJson => JSON.parse(rawEventJson));
+        
+        setMessages(prevMessages => [...prevMessages, ...eventBatch]);
       })
     })()
 
