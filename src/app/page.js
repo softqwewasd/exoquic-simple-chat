@@ -1,7 +1,9 @@
 "use client"
 
 import { useEffect, useState } from "react";
-import { SubscriptionManager } from "@exoquic/sub";
+import { AuthorizedSubscriber, DEFAULT_AUTHORIZED_SUBSCRIPTION_SETTINGS, SubscriptionManager } from "@exoquic/sub";
+
+
 
 // This is the subscription manager, it doesn't do much right now,
 // but sooner rather than later it will be caching subscriptions and
@@ -11,6 +13,41 @@ export const subscriptionManager = new SubscriptionManager(async () => {
   const data = await response.json();
   return data.subscriptionToken;
 });
+
+let db;
+
+/**
+ * Open (or create) the database and return the instance.
+ * 
+ * @param {String} dbName - The name of the database.
+ * @param {Number} version - The version of the database (for schema upgrades).
+ * @returns {Promise<IDBDatabase>} - A promise that resolves with the DB instance.
+ */
+export async function openDatabase(dbName, version = 1) {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(dbName, version);
+
+    request.onerror = (event) => {
+      console.error("Error opening database", event);
+      reject(event);
+    };
+
+    request.onsuccess = (event) => {
+      db = event.target.result;
+      resolve(db);
+    };
+
+    request.onupgradeneeded = (event) => {
+      db = event.target.result;
+
+      // Create the object store if it doesn't already exist
+      if (!db.objectStoreNames.contains("chat")) {
+        const store = db.createObjectStore("chat", { autoIncrement: true });
+        console.log("Created chat store");
+      }
+    };
+  });
+}
 
 export default function Home() {
   const [nickname, setNickname] = useState("");
@@ -43,18 +80,45 @@ export default function Home() {
     setNewMessage("");
   };
 
+  useEffect(() => {
+    if (!chatStarted) return;
+
+    openDatabase("simple-chat-app", 1).then(db => {
+      const chatStore = db.transaction(["chat"] , "readwrite").objectStore("chat");
+      chatStore.getAll().onsuccess = (event) => {
+        console.log("getall finished!", event.target.result);
+        event.target.result.map(eventBatch => {
+          return eventBatch.map(message => JSON.parse(message));
+        }).forEach(messagesBatch => {
+          setMessages(prevMessages => [...prevMessages, ...messagesBatch]);
+        });
+      };
+    });
+  }, [chatStarted]);
+
   // This useEffect is where we retrieve an subscription token and subscribe to the "simple-chat" topic.
   useEffect(() => {
     if (!chatStarted) return;
 
     let subscriber = null;
-    (async () => {
-      // Authorize the subscriber
-      subscriber = await subscriptionManager.authorizeSubscriber();
 
+    (async () => {
+      let subscriber;
+      if (!localStorage.getItem("subscriptionToken")) {
+        subscriber = await subscriptionManager.authorizeSubscriber();
+      } else {
+        subscriber = new AuthorizedSubscriber(localStorage.getItem("subscriptionToken"), DEFAULT_AUTHORIZED_SUBSCRIPTION_SETTINGS);
+      }
+
+      await openDatabase("simple-chat-app", 1);
+      
       // Subscribe to the "simple-chat" topic
       subscriber.subscribe(rawEventBatch => {
         const parsedEventBatchWithRawMessages = JSON.parse(rawEventBatch.data);
+        const transaction = db.transaction(["chat"] , "readwrite");
+        const chatStore = transaction.objectStore("chat");
+        chatStore.add(parsedEventBatchWithRawMessages);
+
         const eventBatch = parsedEventBatchWithRawMessages.map(rawEventJson => JSON.parse(rawEventJson));
         
         setMessages(prevMessages => [...prevMessages, ...eventBatch]);
