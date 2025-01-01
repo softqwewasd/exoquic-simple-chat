@@ -16,7 +16,8 @@ export async function GET(req) {
     topic: "simple-chat", // I am using the topic "simple-chat", because I am already using "chat" for a different app 
 		channel: "one-channel-to-rule-them-all", // https://exoquic.com/docs/publishing-events#channel
 		resetFrom: "earliest",
-		subscriptionId
+		subscriptionId,
+		expiresAt: Math.floor(Date.now() / 1000) + 60 * 60, // 1 hour from now in seconds since epoch
   });
 
 	return NextResponse.json({ subscriptionToken });

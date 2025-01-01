@@ -107,7 +107,7 @@ export default function Home() {
       if (!localStorage.getItem("subscriptionToken")) {
         subscriber = await subscriptionManager.authorizeSubscriber();
       } else {
-        subscriber = new AuthorizedSubscriber(localStorage.getItem("subscriptionToken"), DEFAULT_AUTHORIZED_SUBSCRIPTION_SETTINGS);
+        subscriber = new AuthorizedSubscriber(localStorage.getItem("subscriptionToken"), { DEFAULT_AUTHORIZED_SUBSCRIPTION_SETTINGS });
       }
 
       await openDatabase("simple-chat-app", 1);
