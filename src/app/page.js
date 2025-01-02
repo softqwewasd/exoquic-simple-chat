@@ -54,9 +54,7 @@ export default function Home() {
 
       // Subscribe to the "simple-chat" topic
       subscriber.subscribe(rawEventBatch => {
-        const parsedEventBatchWithRawMessages = JSON.parse(rawEventBatch.data);
-        const eventBatch = parsedEventBatchWithRawMessages.map(rawEventJson => JSON.parse(rawEventJson));
-        
+        const eventBatch = rawEventBatch.map(rawEventJson => JSON.parse(rawEventJson));
         setMessages(prevMessages => [...prevMessages, ...eventBatch]);
       })
     })()
