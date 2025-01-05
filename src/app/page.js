@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { SubscriptionManager } from "@exoquic/sub";
 
 // This is the subscription manager, it doesn't do much right now,
@@ -23,6 +23,7 @@ export default function Home() {
   const [chatStarted, setChatStarted] = useState(false);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
+  const messagesEndRef = useRef(null);
 
   const startChatting = () => {
     if (nickname.trim() !== "") {
@@ -48,6 +49,14 @@ export default function Home() {
 
     setNewMessage("");
   };
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   // This useEffect is where we retrieve an subscription token and subscribe to the "simple-chat" topic.
   useEffect(() => {
@@ -115,6 +124,7 @@ export default function Home() {
             ) : (
               <p>No messages yet.</p>
             )}
+            <div ref={messagesEndRef} />
           </div>
           <input
             type="text"
