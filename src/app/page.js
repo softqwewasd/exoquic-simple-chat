@@ -10,6 +10,12 @@ export const subscriptionManager = new SubscriptionManager(async () => {
   const response = await fetch("/api/authorize-subscribers");
   const data = await response.json();
   return data.subscriptionToken;
+}, {
+  env: "dev",
+  name: "simple-chat-subsription-manager",
+  cachedSubscribers: [
+    { name: "all-messages-subscriber" }
+  ]
 });
 
 export default function Home() {
@@ -50,7 +56,7 @@ export default function Home() {
     let subscriber = null;
     (async () => {
       // Authorize the subscriber
-      subscriber = await subscriptionManager.authorizeSubscriber();
+      subscriber = await subscriptionManager.authorizeSubscriber("all-messages-subscriber");
 
       // Subscribe to the "simple-chat" topic
       subscriber.subscribe(rawEventBatch => {
