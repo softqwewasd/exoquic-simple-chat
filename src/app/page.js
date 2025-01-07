@@ -14,7 +14,9 @@ export const subscriptionManager = new SubscriptionManager(async () => {
   env: "dev",
   name: "simple-chat-subsription-manager",
   cachedSubscribers: [
-    { name: "all-messages-subscriber" }
+    { 
+      name: "all-messages-subscriber"
+    }
   ]
 });
 
