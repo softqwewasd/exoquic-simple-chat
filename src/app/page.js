@@ -67,7 +67,7 @@ export default function Home() {
     let subscriber = null;
     (async () => {
       // Authorize the subscriber
-      subscriber = await subscriptionManager.authorizeSubscriber("all-messages-subscriber");
+      subscriber = await subscriptionManager.authorizeSubscriber();
 
       // Subscribe to the "simple-chat" topic
       subscriber.subscribe(rawEventBatch => {
