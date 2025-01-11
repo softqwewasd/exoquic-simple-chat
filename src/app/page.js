@@ -11,13 +11,7 @@ export const subscriptionManager = new SubscriptionManager(async () => {
   const data = await response.json();
   return data.subscriptionToken;
 }, {
-  env: "dev",
-  name: "simple-chat-subsription-manager",
-  cachedSubscribers: [
-    { 
-      name: "all-messages-subscriber"
-    }
-  ]
+  env: "dev"
 });
 
 export default function Home() {
